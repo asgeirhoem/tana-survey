@@ -112,6 +112,7 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatI
     if (message.trim() && !disabled) {
       onSendMessage(message.trim())
       setMessage('')
+      setClickedSuggestions(new Set()) // Clear suggestions when user sends message
       // Re-focus after sending message
       setTimeout(() => textareaRef.current?.focus(), 50)
     }
@@ -120,6 +121,11 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatI
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value
     setMessage(newValue)
+    
+    // Auto-resize textarea
+    const textarea = e.target
+    textarea.style.height = 'auto'
+    textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px'
     
     // Start timer on first character typed
     if (!hasStartedTyping && newValue.length > 0) {
@@ -139,8 +145,8 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatI
     <div className="w-full">
       {/* Suggestions */}
       {suggestions.length > 0 && !isSessionEnding && (
-        <div className="mb-2">
-          <div className="flex flex-wrap gap-2">
+        <div className="mb-1">
+          <div className="flex flex-wrap gap-2 mb-2">
             {suggestions.map((suggestion, index) => {
               const isClicked = clickedSuggestions.has(suggestion)
               return (
@@ -149,10 +155,10 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatI
                   type="button"
                   onClick={() => handleSuggestionClick(suggestion)}
                   disabled={disabled}
-                  className={`px-2 py-1 text-xs rounded border bg-transparent transition-all duration-300 ${
+                  className={`px-2 py-1 text-sm rounded border bg-transparent transition-all duration-300 ${
                     isClicked 
-                      ? 'opacity-30 text-muted border-subtle' 
-                      : 'text-muted hover:text-primary border-subtle hover:border-primary'
+                      ? 'opacity-30 text-muted border-transparent' 
+                      : 'text-muted hover:text-primary border-light hover:border-primary'
                   }`}
                 >
                   {suggestion}
@@ -166,21 +172,45 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatI
       <form onSubmit={handleSubmit} className={`w-full transition-opacity duration-1000 ${
         isSessionEnding ? 'opacity-20' : 'opacity-100'
       }`}>
-        <textarea
-          ref={ref || textareaRef}
-          value={message}
-          onChange={handleChange}
-          onKeyDown={handleKeyDown}
-          placeholder={isSessionEnding ? "Submitted!" : "Type your response..."}
-          disabled={disabled || isSessionEnding}
-          autoFocus
-          className="w-full px-3 py-3 text-base sm:text-lg bg-secondary text-primary border border-subtle rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-opacity-50 resize-none placeholder-muted focus:border-subtle"
-          style={{ 
-            minHeight: '52px', 
-            maxHeight: '200px'
-          } as React.CSSProperties}
-          rows={1}
-        />
+        <div className="relative flex items-start">
+          <textarea
+            ref={ref || textareaRef}
+            value={message}
+            onChange={handleChange}
+            onKeyDown={handleKeyDown}
+            placeholder={isSessionEnding ? "Submitted!" : "Type your response..."}
+            disabled={disabled || isSessionEnding}
+            autoFocus
+            className="flex-1 px-3 py-3 pr-10 text-base sm:text-lg bg-secondary text-primary rounded-lg focus:outline-none resize-none placeholder-muted focus:shadow-[0_0_0_2px_#007AFF]"
+            style={{ 
+              minHeight: '52px', 
+              maxHeight: '200px',
+              boxShadow: '0 0 0 1px var(--border-subtle)'
+            } as React.CSSProperties}
+            rows={1}
+          />
+          <button
+            type="submit"
+            disabled={!message.trim() || disabled || isSessionEnding}
+            className="absolute right-3 top-3 mt-[6px] text-muted hover:text-primary transition-colors duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <svg 
+              width="16" 
+              height="16" 
+              viewBox="0 0 16 16" 
+              fill="none" 
+              className="rotate-0"
+            >
+              <path 
+                d="M8 3L13 8L8 13M13 8H3" 
+                stroke="currentColor" 
+                strokeWidth="1.5" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
       </form>
     </div>
   )

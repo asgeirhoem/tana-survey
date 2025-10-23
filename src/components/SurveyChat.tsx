@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import ChatMessage from './ChatMessage'
 import ChatInput from './ChatInput'
+import TanaLogo from './TanaLogo'
 
 interface Message {
   id: string
@@ -14,7 +15,7 @@ interface Message {
 const INITIAL_MESSAGE: Message = {
   id: '1',
   role: 'assistant',
-  content: "Hi! I'd love to learn about your startup and how your team works. Let's start with something simple - what's your company about and what problem are you solving?",
+  content: "Hi! The Tana design team would like to learn about your startup and how your team works.\n\nWhat's your company about and what problem are you solving?",
   timestamp: new Date()
 }
 
@@ -22,10 +23,8 @@ export default function SurveyChat() {
   const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE])
   const [isLoading, setIsLoading] = useState(false)
   const [sessionStartTime, setSessionStartTime] = useState<Date | null>(null)
-  const [sessionDuration, setSessionDuration] = useState(0)
   const [isSessionEnding, setIsSessionEnding] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const sessionTimerRef = useRef<NodeJS.Timeout | null>(null)
   const chatInputRef = useRef<any>(null)
 
   const scrollToBottom = useCallback(() => {
@@ -36,35 +35,94 @@ export default function SurveyChat() {
     scrollToBottom()
   }, [messages, scrollToBottom])
 
-  // Session timer effect
+  // Save data on page unload
   useEffect(() => {
-    if (sessionStartTime && !isSessionEnding) {
-      sessionTimerRef.current = setInterval(() => {
-        const now = new Date()
-        const duration = Math.floor((now.getTime() - sessionStartTime.getTime()) / 1000)
-        setSessionDuration(duration)
+    const handleBeforeUnload = async (e: BeforeUnloadEvent) => {
+      // Only save if we have actual conversation data
+      if (messages.length > 1 && sessionStartTime) {
+        const sessionDuration = Math.floor((new Date().getTime() - sessionStartTime.getTime()) / 1000)
         
-        // Wind down conversation at 60 seconds
-        if (duration >= 60) {
-          setIsSessionEnding(true)
-          if (sessionTimerRef.current) {
-            clearInterval(sessionTimerRef.current)
-          }
+        // Use sendBeacon for reliable data sending during page unload
+        const data = {
+          conversation: messages,
+          latestResponse: messages[messages.length - 1]?.content || '',
+          sessionDuration,
+          isAbruptExit: true
         }
-      }, 1000)
-
-      return () => {
-        if (sessionTimerRef.current) {
-          clearInterval(sessionTimerRef.current)
-        }
+        
+        navigator.sendBeacon('/api/sheets', JSON.stringify(data))
       }
     }
-  }, [sessionStartTime, isSessionEnding])
 
-  // Start session timer on first keystroke
-  const startSessionTimer = useCallback(() => {
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [messages, sessionStartTime])
+
+
+  // Start session on first keystroke
+  const startSession = useCallback(() => {
     if (!sessionStartTime) {
       setSessionStartTime(new Date())
+    }
+  }, [sessionStartTime])
+
+  // Check if we should tell AI to conclude based on data completeness
+  const shouldConcludeConversation = useCallback((conversation: Message[]) => {
+    // Count how many of our target data points we likely have
+    const userMessages = conversation.filter(m => m.role === 'user').map(m => m.content.toLowerCase())
+    const allUserText = userMessages.join(' ')
+    
+    // Check for key data points mentioned
+    let dataPoints = 0
+    
+    // Role/team size (often in first response)
+    if (allUserText.includes('ceo') || allUserText.includes('cto') || allUserText.includes('founder') || 
+        allUserText.includes('engineer') || allUserText.includes('people') || allUserText.includes('team')) dataPoints++
+    
+    // Location setup
+    if (allUserText.includes('remote') || allUserText.includes('office') || allUserText.includes('hybrid')) dataPoints++
+    
+    // Tools mentioned
+    if (allUserText.includes('slack') || allUserText.includes('notion') || allUserText.includes('jira') || 
+        allUserText.includes('linear') || allUserText.includes('trello') || allUserText.includes('asana')) dataPoints++
+    
+    // AI usage
+    if (allUserText.includes('chatgpt') || allUserText.includes('claude') || allUserText.includes('copilot') || 
+        allUserText.includes('ai') || allUserText.includes('none')) dataPoints++
+    
+    // Industry/stage
+    if (allUserText.includes('seed') || allUserText.includes('series') || allUserText.includes('bootstrap') || 
+        allUserText.includes('startup') || allUserText.includes('saas') || allUserText.includes('fintech')) dataPoints++
+    
+    // End if we have good coverage (4+ data points) and at least 3 exchanges
+    return dataPoints >= 4 && userMessages.length >= 3
+  }, [])
+
+  // Check if conversation should end based on AI response
+  const checkForConversationEnd = useCallback(async (latestResponse: string, conversation: Message[]) => {
+    // Only end on the specific conclusion phrase from our prompt
+    if (latestResponse.toLowerCase().includes('perfect, thanks!')) {
+      
+      // Mark session as ending
+      setIsSessionEnding(true)
+      
+      // Submit conversation to Google Sheets
+      const sessionDuration = sessionStartTime ? 
+        Math.floor((new Date().getTime() - sessionStartTime.getTime()) / 1000) : 0
+      
+      try {
+        await fetch('/api/sheets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            conversation,
+            latestResponse,
+            sessionDuration
+          })
+        })
+      } catch (error) {
+        console.error('Failed to save conversation:', error)
+      }
     }
   }, [sessionStartTime])
 
@@ -91,18 +149,20 @@ export default function SurveyChat() {
     setMessages(prev => [...prev, assistantMessage])
 
     try {
+      const updatedConversation = [...messages, userMessage]
+      const shouldConclude = shouldConcludeConversation(updatedConversation)
+      
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          messages: [...messages, userMessage].map(msg => ({
+          messages: updatedConversation.map(msg => ({
             role: msg.role,
             content: msg.content
           })),
-          sessionDuration,
-          isSessionEnding
+          shouldConclude
         }),
       })
 
@@ -132,7 +192,33 @@ export default function SurveyChat() {
             const data = line.slice(6)
             if (data === '[DONE]') {
               setIsLoading(false)
-              // Re-focus input after AI response completes
+              
+              // Check if conversation should end
+              const finalConversation = [...messages, userMessage, { 
+                ...assistantMessage, 
+                content: accumulatedContent 
+              }]
+              await checkForConversationEnd(accumulatedContent, finalConversation)
+              
+              // Auto-save after each exchange (in case of abrupt exit)
+              if (finalConversation.length > 3 && sessionStartTime) {
+                try {
+                  await fetch('/api/sheets', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      conversation: finalConversation,
+                      latestResponse: accumulatedContent,
+                      sessionDuration: Math.floor((new Date().getTime() - sessionStartTime.getTime()) / 1000),
+                      isAutoSave: true
+                    })
+                  })
+                } catch (error) {
+                  console.error('Auto-save failed:', error)
+                }
+              }
+              
+              // Re-focus input after AI response completes (if not ending)
               setTimeout(() => {
                 const textarea = document.querySelector('textarea')
                 if (textarea && !isSessionEnding) {
@@ -172,28 +258,34 @@ export default function SurveyChat() {
     } finally {
       setIsLoading(false)
     }
-  }, [messages])
+  }, [messages, checkForConversationEnd, isSessionEnding])
 
   return (
-    <div className="min-h-screen flex flex-col relative">
-      {/* Subtle timer in bottom right */}
-      {sessionStartTime && (
-        <div className="fixed bottom-4 right-4 text-muted pointer-events-none" style={{ fontSize: '10px' }}>
-          {sessionDuration}s
-        </div>
-      )}
+    <div className="min-h-screen flex flex-col relative transition-colors duration-1000" style={{
+      backgroundColor: isSessionEnding ? 'var(--colorGreen50)' : 'var(--bg-primary)'
+    }}>
       
-      {isSessionEnding && (
-        <div className="px-4 sm:px-6 py-2 bg-secondary border-b border-subtle">
-          <p className="text-secondary text-sm text-center">
-            Survey completing - thank you for your time! 🙏
-          </p>
-        </div>
-      )}
       <div className="flex-1 overflow-y-auto px-4 sm:px-6 pt-16 pb-8 max-w-2xl mx-auto w-full">
-        {messages.map((message) => (
-          <ChatMessage key={message.id} message={message} />
-        ))}
+        <div className="mb-8">
+          <TanaLogo className="h-12 w-auto" />
+        </div>
+        {messages.map((message, index) => {
+          const isLastAssistantMessage = isSessionEnding && 
+            message.role === 'assistant' && 
+            index === messages.length - 1
+          const shouldFadeOut = isSessionEnding && !isLastAssistantMessage
+          
+          return (
+            <div 
+              key={message.id}
+              className={`transition-opacity duration-1000 ${
+                shouldFadeOut ? 'opacity-20' : 'opacity-100'
+              }`}
+            >
+              <ChatMessage message={message} isSessionEnding={isSessionEnding} />
+            </div>
+          )
+        })}
         {isLoading && (
           <div className="mb-6 text-left">
             <div className="inline-block">
@@ -207,13 +299,19 @@ export default function SurveyChat() {
         )}
         <div ref={messagesEndRef} />
       </div>
-      <div className="px-4 sm:px-6 pb-4 max-w-2xl mx-auto w-full">
+      <div className="px-4 sm:px-6 pb-6 sm:pb-12 max-w-2xl mx-auto w-full">
         <ChatInput 
           ref={chatInputRef}
           onSendMessage={handleSendMessage} 
-          onFirstKeystroke={startSessionTimer}
+          onFirstKeystroke={startSession}
           autoFocus={true}
-          disabled={isLoading || isSessionEnding} 
+          disabled={isLoading || isSessionEnding}
+          isSessionEnding={isSessionEnding}
+          lastAssistantMessage={
+            messages.length > 0 ? 
+            messages.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '' : 
+            ''
+          }
         />
       </div>
     </div>

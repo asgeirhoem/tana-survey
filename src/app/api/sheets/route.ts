@@ -4,7 +4,18 @@ import { v4 as uuidv4 } from 'uuid'
 
 export async function POST(request: NextRequest) {
   try {
-    const { conversation, latestResponse } = await request.json()
+    // Check for required environment variables
+    if (!process.env.GOOGLE_SHEETS_SPREADSHEET_ID || 
+        !process.env.GOOGLE_SHEETS_PRIVATE_KEY || 
+        !process.env.GOOGLE_SHEETS_CLIENT_EMAIL) {
+      console.error('Google Sheets credentials not fully configured')
+      return NextResponse.json(
+        { error: 'Google Sheets not configured' },
+        { status: 500 }
+      )
+    }
+
+    const { conversation, latestResponse, sessionDuration, isAbruptExit, isAutoSave } = await request.json()
 
     if (!conversation || !Array.isArray(conversation)) {
       return NextResponse.json(
@@ -20,8 +31,9 @@ export async function POST(request: NextRequest) {
     const conversationData = {
       timestamp: new Date().toISOString(),
       sessionId,
+      duration: sessionDuration,
       messages: conversation,
-      summary: latestResponse
+      summary: latestResponse + (isAbruptExit ? ' [ABRUPT EXIT]' : '') + (isAutoSave ? ' [AUTO-SAVED]' : '')
     }
 
     await saveConversationToSheets(conversationData)
@@ -33,6 +45,23 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Sheets API error:', error)
+    
+    // More specific error messages
+    if (error instanceof Error) {
+      if (error.message.includes('GOOGLE_SHEETS_SPREADSHEET_ID')) {
+        return NextResponse.json(
+          { error: 'Google Sheets configuration missing' },
+          { status: 500 }
+        )
+      }
+      if (error.message.includes('service-account-key.json')) {
+        return NextResponse.json(
+          { error: 'Google Service Account credentials missing' },
+          { status: 500 }
+        )
+      }
+    }
+    
     return NextResponse.json(
       { error: 'Failed to save to Google Sheets' },
       { status: 500 }

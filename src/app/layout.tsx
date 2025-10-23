@@ -5,8 +5,8 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Startup Survey - Share Your Workflow',
-  description: 'Help us understand how startups work by sharing your team\'s workflow and tools.',
+  title: 'Survey about startup team workflows - Tana',
+  description: 'The Tana design team would like to learn about your startup and how your team works.',
 }
 
 export default function RootLayout({

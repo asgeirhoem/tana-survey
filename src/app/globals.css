@@ -3,48 +3,135 @@
 @tailwind utilities;
 
 :root {
+  /* Gray scale */
+  --colorGray25: #fcfcfd;
+  --colorGray50: #fcfcfd;
+  --colorGray75: #fafafc;
+  --colorGray100: #f8f8fa;
+  --colorGray125: #f5f5f7;
+  --colorGray150: #f1f1f4;
+  --colorGray175: #ececf0;
+  --colorGray200: #e6e6eb;
+  --colorGray225: #e0dfe6;
+  --colorGray250: #d9d8e1;
+  --colorGray275: #d1d0da;
+  --colorGray300: #c9c8d4;
+  --colorGray325: #c0bfcc;
+  --colorGray350: #b7b6c5;
+  --colorGray375: #aeacbd;
+  --colorGray400: #a5a2b5;
+  --colorGray425: #9b98ac;
+  --colorGray450: #928da4;
+  --colorGray475: #88839b;
+  --colorGray500: #7d798f;
+  --colorGray525: #727084;
+  --colorGray550: #686679;
+  --colorGray575: #5e5d6e;
+  --colorGray600: #555463;
+  --colorGray625: #4b4b59;
+  --colorGray650: #434350;
+  --colorGray675: #3b3b46;
+  --colorGray700: #33343e;
+  --colorGray725: #2d2d36;
+  --colorGray750: #26272f;
+  --colorGray775: #212228;
+  --colorGray800: #1c1d22;
+  --colorGray825: #17181d;
+  --colorGray850: #131419;
+  --colorGray875: #0f1015;
+  --colorGray900: #0b0c11;
+  --colorGray925: #07080e;
+  --colorGray950: #04050b;
+  --colorGray975: #030409;
+
   /* Light mode colors */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8f9fa;
-  --text-primary: #1a1a1a;
-  --text-secondary: #6b7280;
-  --text-muted: #9ca3af;
-  --border-subtle: #e5e7eb;
+  --bg-primary: var(--colorGray25);
+  --bg-secondary: var(--colorGray100);
+  --text-primary: var(--colorGray900);
+  --text-secondary: var(--colorGray600);
+  --text-muted: var(--colorGray500);
+  --border-subtle: var(--colorGray200);
+  --border-light: var(--colorGray150);
   --accent: #3b82f6;
+  
+  /* Custom green scale */
+  --colorGreen50: #eef9ea;
+  --colorGreen100: #d9edd6;
+  --colorGreen150: #c3e2c3;
+  --colorGreen200: #acd6b1;
+  --colorGreen250: #94cba0;
+  --colorGreen300: #7ac090;
+  --colorGreen350: #63b483;
+  --colorGreen400: #5aa67a;
+  --colorGreen450: #529770;
+  --colorGreen500: #4a8a67;
+  --colorGreen550: #437c5d;
+  --colorGreen600: #3c6e54;
+  --colorGreen650: #35614b;
+  --colorGreen700: #2e5441;
+  --colorGreen750: #284838;
+  --colorGreen800: #223c2f;
+  --colorGreen850: #1c3026;
+  --colorGreen900: #16241e;
+  --colorGreen950: #101a15;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     /* Dark mode colors */
-    --bg-primary: #0a0a0a;
-    --bg-secondary: #1a1a1a;
-    --text-primary: #ffffff;
-    --text-secondary: #d1d5db;
-    --text-muted: #9ca3af;
-    --border-subtle: #374151;
+    --bg-primary: var(--colorGray950);
+    --bg-secondary: var(--colorGray875);
+    --text-primary: var(--colorGray25);
+    --text-secondary: var(--colorGray350);
+    --text-muted: var(--colorGray450);
+    --border-subtle: var(--colorGray750);
+    --border-light: var(--colorGray825);
     --accent: #60a5fa;
+    
+    /* Custom green scale for dark mode */
+    --colorGreen50: #101a15;
+    --colorGreen100: #16241e;
+    --colorGreen150: #1c3026;
+    --colorGreen200: #223c2f;
+    --colorGreen250: #284838;
+    --colorGreen300: #2e5441;
+    --colorGreen350: #35614b;
+    --colorGreen400: #3c6e54;
+    --colorGreen450: #437c5d;
+    --colorGreen500: #4a8a67;
+    --colorGreen550: #529770;
+    --colorGreen600: #5aa67a;
+    --colorGreen650: #63b483;
+    --colorGreen700: #7ac090;
+    --colorGreen750: #94cba0;
+    --colorGreen800: #acd6b1;
+    --colorGreen850: #c3e2c3;
+    --colorGreen900: #d9edd6;
+    --colorGreen950: #eef9ea;
   }
 }
 
 /* Force light mode class */
 .light {
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8f9fa;
-  --text-primary: #1a1a1a;
-  --text-secondary: #6b7280;
-  --text-muted: #9ca3af;
-  --border-subtle: #e5e7eb;
+  --bg-primary: var(--colorGray25);
+  --bg-secondary: var(--colorGray100);
+  --text-primary: var(--colorGray900);
+  --text-secondary: var(--colorGray600);
+  --text-muted: var(--colorGray500);
+  --border-subtle: var(--colorGray200);
+  --border-light: var(--colorGray150);
   --accent: #3b82f6;
 }
 
 /* Force dark mode class */
 .dark {
-  --bg-primary: #0a0a0a;
-  --bg-secondary: #1a1a1a;
-  --text-primary: #ffffff;
-  --text-secondary: #d1d5db;
-  --text-muted: #9ca3af;
-  --border-subtle: #374151;
+  --bg-primary: var(--colorGray950);
+  --bg-secondary: var(--colorGray875);
+  --text-primary: var(--colorGray25);
+  --text-secondary: var(--colorGray350);
+  --text-muted: var(--colorGray450);
+  --border-subtle: var(--colorGray750);
+  --border-light: var(--colorGray825);
   --accent: #60a5fa;
 }
 
@@ -81,6 +168,10 @@ body {
   
   .border-subtle {
     border-color: var(--border-subtle);
+  }
+  
+  .border-light {
+    border-color: var(--border-light);
   }
   
   .accent {
