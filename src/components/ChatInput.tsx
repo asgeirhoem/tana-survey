@@ -143,18 +143,34 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatI
     <div className="w-full">
       {/* Suggestions */}
       {suggestionGroups.length > 0 && !isSessionEnding && (
-        <div className="mb-1 animate-in fade-in duration-100">
-          <div className="flex flex-wrap gap-2 mb-2 items-end justify-start">
-            {suggestionGroups.map((group, groupIndex) => (
-              <React.Fragment key={groupIndex}>
-                {groupIndex > 0 && (
-                  <div className="w-px h-6 bg-light self-center mx-1"></div>
-                )}
-                {group.suggestions.map((suggestion, index) => {
-                  const isClicked = clickedSuggestions.has(suggestion)
-                  return (
+        <div className="mb-3 animate-in fade-in duration-100">
+          <div className="flex flex-wrap-reverse gap-2 mb-2 items-end justify-start">
+            {(() => {
+              // Flatten all suggestions and limit to 10
+              const allSuggestions = suggestionGroups.flatMap(group => group.suggestions).slice(0, 10)
+              let currentGroupIndex = 0
+              let currentGroup = suggestionGroups[0]
+              let suggestionIndexInGroup = 0
+              
+              return allSuggestions.map((suggestion, index) => {
+                // Find which group this suggestion belongs to
+                while (currentGroup && suggestionIndexInGroup >= currentGroup.suggestions.length) {
+                  currentGroupIndex++
+                  currentGroup = suggestionGroups[currentGroupIndex]
+                  suggestionIndexInGroup = 0
+                }
+                
+                const isClicked = clickedSuggestions.has(suggestion)
+                const isNewGroup = suggestionIndexInGroup === 0 && currentGroupIndex > 0
+                
+                suggestionIndexInGroup++
+                
+                return (
+                  <React.Fragment key={index}>
+                    {isNewGroup && (
+                      <div className="w-px h-6 bg-light self-center mx-1"></div>
+                    )}
                     <button
-                      key={`${groupIndex}-${index}`}
                       type="button"
                       onClick={() => handleSuggestionClick(suggestion)}
                       disabled={disabled}
@@ -166,10 +182,10 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatI
                     >
                       {suggestion}
                     </button>
-                  )
-                })}
-              </React.Fragment>
-            ))}
+                  </React.Fragment>
+                )
+              })
+            })()}
           </div>
         </div>
       )}
@@ -186,25 +202,17 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatI
             placeholder={isSessionEnding ? "Submitted!" : "Type your response..."}
             disabled={disabled || isSessionEnding}
             autoFocus
-            className="w-full px-4 py-4 text-base bg-secondary text-primary rounded-lg outline-none resize-none placeholder-muted transition-shadow duration-200 sm:px-3 sm:py-3"
+            className="w-full px-4 py-4 pr-12 text-base bg-secondary text-primary rounded-lg outline-none resize-none placeholder-muted focus:!shadow-[0_0_0_1.5px_var(--border-primary)] transition-shadow duration-200 sm:px-3 sm:py-3 sm:pr-10"
             style={{ 
-              minHeight: '56px', 
-              maxHeight: '200px',
               boxShadow: '0 0 0 1px var(--border-subtle)'
             } as React.CSSProperties}
-            onFocus={(e) => {
-              e.target.style.boxShadow = '0 0 0 2px #007AFF'
-            }}
-            onBlur={(e) => {
-              e.target.style.boxShadow = '0 0 0 1px var(--border-subtle)'
-            }}
             rows={1}
           />
           {/* Submit button hidden on mobile, visible on desktop */}
           <button
             type="submit"
             disabled={!message.trim() || disabled || isSessionEnding}
-            className="hidden sm:block absolute right-3 top-3 mt-[6px] text-muted hover:text-primary transition-colors duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
+            className="hidden sm:flex absolute bottom-5 right-3 items-center justify-center w-6 h-6 text-muted hover:text-primary transition-colors duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
           >
             <svg 
               width="16" 
