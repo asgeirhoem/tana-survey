@@ -181,7 +181,7 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatI
             placeholder={isSessionEnding ? "Submitted!" : "Type your response..."}
             disabled={disabled || isSessionEnding}
             autoFocus
-            className="w-full px-4 py-4 text-base bg-secondary text-primary rounded-lg focus:outline-none resize-none placeholder-muted focus:shadow-[0_0_0_2px_#007AFF] sm:px-3 sm:py-3"
+            className="w-full px-4 py-4 text-base bg-secondary text-primary rounded-lg focus:outline-none resize-none placeholder-muted focus:shadow-[0_0_0_2px_#007AFF] transition-shadow duration-200 sm:px-3 sm:py-3"
             style={{ 
               minHeight: '56px', 
               maxHeight: '200px',

@@ -301,7 +301,9 @@ export default function SurveyChat() {
       </div>
       
       {/* Fixed input container for mobile */}
-      <div className="sticky bottom-0 bg-primary px-4 sm:px-6 pb-4 sm:pb-12 pt-2 sm:pt-0 max-w-2xl mx-auto w-full">
+      <div className="sticky bottom-0 px-4 sm:px-6 pb-4 sm:pb-12 pt-2 sm:pt-0 max-w-2xl mx-auto w-full" style={{
+        backgroundColor: isSessionEnding ? 'var(--colorGreen50)' : 'var(--bg-primary)'
+      }}>
         <ChatInput 
           ref={chatInputRef}
           onSendMessage={handleSendMessage} 
