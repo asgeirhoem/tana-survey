@@ -271,7 +271,7 @@ export default function SurveyChat() {
   }, [messages, checkForConversationEnd, isSessionEnding])
 
   return (
-    <div className="min-h-screen flex flex-col relative transition-colors duration-1000" style={{
+    <div className="min-h-[100dvh] flex flex-col relative transition-colors duration-1000" style={{
       backgroundColor: isSessionEnding ? 'var(--colorGreen50)' : 'var(--bg-primary)'
     }}>
       

@@ -144,7 +144,7 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatI
       {/* Suggestions */}
       {suggestionGroups.length > 0 && !isSessionEnding && (
         <div className="mb-3 animate-in fade-in duration-100">
-          <div className="flex flex-wrap-reverse gap-2 mb-2 items-end justify-start">
+          <div className="flex gap-2 mb-2 items-end justify-start overflow-x-auto scrollbar-hide pb-1 sm:flex-wrap sm:overflow-x-visible">
             {(() => {
               // Flatten all suggestions and limit to 10
               const allSuggestions = suggestionGroups.flatMap(group => group.suggestions).slice(0, 10)
@@ -174,7 +174,7 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatI
                       type="button"
                       onClick={() => handleSuggestionClick(suggestion)}
                       disabled={disabled}
-                      className={`px-2 py-1 text-sm rounded border bg-transparent transition-all duration-300 ${
+                      className={`px-2 py-1 text-sm rounded border bg-transparent transition-all duration-300 whitespace-nowrap flex-shrink-0 ${
                         isClicked 
                           ? 'opacity-30 text-muted border-transparent' 
                           : 'text-muted hover:text-primary border-light hover:border-primary'
