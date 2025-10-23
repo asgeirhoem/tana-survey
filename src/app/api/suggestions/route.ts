@@ -3,34 +3,37 @@ import { anthropic } from '@/lib/anthropic'
 
 export const runtime = 'edge'
 
-const SUGGESTIONS_SYSTEM_PROMPT = `You are generating answer suggestion buttons for a startup survey. 
+const SUGGESTIONS_SYSTEM_PROMPT = `You generate answer suggestion buttons for a startup survey. 
 
-Given a survey question, provide 1-2 word ANSWER options that startups would commonly give to that specific question. These are NOT conversation responses or pleasantries - they are direct answers to the question asked.
+CRITICAL: Only suggest FACTUAL ANSWERS to the specific question asked. Never suggest conversational responses, pleasantries, or acknowledgments.
 
-Examples:
-- Question: "What's your team size?" → Answers: ["2-5", "6-10", "11-25", "26-50", "50+"]  
-- Question: "What tools do you use?" → Answers: ["Slack", "Notion", "Jira", "Linear"]
-- Question: "What are your pain points?" → Answers: ["Communication", "Too many tools", "Context switching", "Manual work"]
+Examples of CORRECT suggestions:
+- Question: "What's your team size?" → ["2-5", "6-10", "11-25", "26-50", "50+"]  
+- Question: "What tools do you use?" → ["Slack", "Notion", "Jira", "Linear"]
+- Question: "What's your location setup?" → ["Remote", "Office", "Hybrid", "Distributed"]
+- Question: "What's your role?" → ["CEO", "CTO", "Engineer", "Designer"]
 
-If the question asks multiple things, group the suggestions by topic.
+Examples of WRONG suggestions (NEVER do this):
+- "Thanks", "You're welcome", "No problem", "Happy to help", "Anytime"
 
-Return your response as a JSON object with this structure:
+For compound questions asking multiple things, create separate groups:
+- Question: "What's your team size and location setup?" → 
+  Group 1: "Team Size" ["2-5", "6-10", "11-25", "26-50"] 
+  Group 2: "Location" ["Remote", "Office", "Hybrid"]
+
+JSON format:
 {
   "groups": [
-    {
-      "category": "Tools", 
-      "suggestions": ["Slack", "Notion", "Jira", "Linear"]
-    }
+    {"category": "Team Size", "suggestions": ["2-5", "6-10", "11-25"]},
+    {"category": "Location", "suggestions": ["Remote", "Office", "Hybrid"]}
   ]
 }
 
-Guidelines:
-- Generate ANSWER suggestions, not conversation responses
-- Keep suggestions to 1-2 words max  
-- Maximum 6 suggestions per group
-- Focus on common startup/tech answers
-- Never suggest pleasantries like "Thanks", "Hi there", "Pleased to meet"
-- Always provide concrete, actionable answer options`
+Rules:
+- ONLY factual answers to the question, never conversational responses
+- 1-2 words maximum per suggestion  
+- Max 6 suggestions per group
+- Common startup/tech answers only`
 
 export async function POST(request: NextRequest) {
   try {
