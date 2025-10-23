@@ -265,9 +265,9 @@ export default function SurveyChat() {
       backgroundColor: isSessionEnding ? 'var(--colorGreen50)' : 'var(--bg-primary)'
     }}>
       
-      <div className="flex-1 overflow-y-auto px-4 sm:px-6 pt-16 pb-8 max-w-2xl mx-auto w-full">
-        <div className="mb-8">
-          <TanaLogo className="h-12 w-auto" />
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 pt-8 sm:pt-16 pb-2 sm:pb-8 max-w-2xl mx-auto w-full">
+        <div className="mb-6 sm:mb-8">
+          <TanaLogo className="h-10 sm:h-12 w-auto" />
         </div>
         {messages.map((message, index) => {
           const isLastAssistantMessage = isSessionEnding && 
@@ -299,7 +299,9 @@ export default function SurveyChat() {
         )}
         <div ref={messagesEndRef} />
       </div>
-      <div className="px-4 sm:px-6 pb-6 sm:pb-12 max-w-2xl mx-auto w-full">
+      
+      {/* Fixed input container for mobile */}
+      <div className="sticky bottom-0 bg-primary px-4 sm:px-6 pb-4 sm:pb-12 pt-2 sm:pt-0 max-w-2xl mx-auto w-full">
         <ChatInput 
           ref={chatInputRef}
           onSendMessage={handleSendMessage} 

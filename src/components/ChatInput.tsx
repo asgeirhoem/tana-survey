@@ -172,7 +172,7 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatI
       <form onSubmit={handleSubmit} className={`w-full transition-opacity duration-1000 ${
         isSessionEnding ? 'opacity-20' : 'opacity-100'
       }`}>
-        <div className="relative flex items-start">
+        <div className="relative">
           <textarea
             ref={ref || textareaRef}
             value={message}
@@ -181,18 +181,19 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatI
             placeholder={isSessionEnding ? "Submitted!" : "Type your response..."}
             disabled={disabled || isSessionEnding}
             autoFocus
-            className="flex-1 px-3 py-3 pr-10 text-base sm:text-lg bg-secondary text-primary rounded-lg focus:outline-none resize-none placeholder-muted focus:shadow-[0_0_0_2px_#007AFF]"
+            className="w-full px-4 py-4 text-base bg-secondary text-primary rounded-lg focus:outline-none resize-none placeholder-muted focus:shadow-[0_0_0_2px_#007AFF] sm:px-3 sm:py-3"
             style={{ 
-              minHeight: '52px', 
+              minHeight: '56px', 
               maxHeight: '200px',
               boxShadow: '0 0 0 1px var(--border-subtle)'
             } as React.CSSProperties}
             rows={1}
           />
+          {/* Submit button hidden on mobile, visible on desktop */}
           <button
             type="submit"
             disabled={!message.trim() || disabled || isSessionEnding}
-            className="absolute right-3 top-3 mt-[6px] text-muted hover:text-primary transition-colors duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
+            className="hidden sm:block absolute right-3 top-3 mt-[6px] text-muted hover:text-primary transition-colors duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
           >
             <svg 
               width="16" 
