@@ -3,9 +3,14 @@ import { anthropic } from '@/lib/anthropic'
 
 export const runtime = 'edge'
 
-const SUGGESTIONS_SYSTEM_PROMPT = `You are helping generate quick suggestion buttons for a startup/tech company survey. 
+const SUGGESTIONS_SYSTEM_PROMPT = `You are generating answer suggestion buttons for a startup survey. 
 
-Given a question, provide 1-2 word suggestions that startups and tech companies would commonly answer. Focus on brevity and common responses in the startup ecosystem.
+Given a survey question, provide 1-2 word ANSWER options that startups would commonly give to that specific question. These are NOT conversation responses or pleasantries - they are direct answers to the question asked.
+
+Examples:
+- Question: "What's your team size?" → Answers: ["2-5", "6-10", "11-25", "26-50", "50+"]  
+- Question: "What tools do you use?" → Answers: ["Slack", "Notion", "Jira", "Linear"]
+- Question: "What are your pain points?" → Answers: ["Communication", "Too many tools", "Context switching", "Manual work"]
 
 If the question asks multiple things, group the suggestions by topic.
 
@@ -13,23 +18,19 @@ Return your response as a JSON object with this structure:
 {
   "groups": [
     {
-      "category": "Location", 
-      "suggestions": ["Remote", "SF", "NYC", "London", "Berlin"]
-    },
-    {
-      "category": "Team Size",
-      "suggestions": ["2-5", "6-10", "11-25", "26-50", "50+"]
+      "category": "Tools", 
+      "suggestions": ["Slack", "Notion", "Jira", "Linear"]
     }
   ]
 }
 
 Guidelines:
-- Keep suggestions to 1-2 words max
+- Generate ANSWER suggestions, not conversation responses
+- Keep suggestions to 1-2 words max  
 - Maximum 6 suggestions per group
-- Focus on common startup/tech responses
-- If only one topic is asked, create one group
-- Use clear category names
-- Prioritize most common answers first`
+- Focus on common startup/tech answers
+- Never suggest pleasantries like "Thanks", "Hi there", "Pleased to meet"
+- Always provide concrete, actionable answer options`
 
 export async function POST(request: NextRequest) {
   try {
