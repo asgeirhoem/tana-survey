@@ -1,18 +1,93 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, forwardRef, useMemo } from 'react'
+import React from 'react'
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void
   onFirstKeystroke?: () => void
   autoFocus?: boolean
   disabled?: boolean
+  isSessionEnding?: boolean
+  lastAssistantMessage?: string
 }
 
-export default function ChatInput({ onSendMessage, onFirstKeystroke, autoFocus = false, disabled = false }: ChatInputProps) {
+const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatInput({ onSendMessage, onFirstKeystroke, autoFocus = false, disabled = false, isSessionEnding = false, lastAssistantMessage = '' }, ref) {
   const [message, setMessage] = useState('')
   const [hasStartedTyping, setHasStartedTyping] = useState(false)
+  const [clickedSuggestions, setClickedSuggestions] = useState<Set<string>>(new Set())
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Generate suggestions based on the last assistant message
+  const getSuggestions = (assistantMessage: string): string[] => {
+    const lowerMsg = assistantMessage.toLowerCase()
+    
+    // Location/setup questions
+    if (lowerMsg.includes('remote') || lowerMsg.includes('office') || lowerMsg.includes('location') || lowerMsg.includes('where')) {
+      return ['Remote', 'SF', 'NY', 'London', 'Hybrid', 'Office', 'Berlin']
+    }
+    
+    // Project management tools
+    if (lowerMsg.includes('project management') || lowerMsg.includes('track project')) {
+      return ['Linear', 'Jira', 'Trello', 'Asana', 'Monday', 'Notion', 'ClickUp']
+    }
+    
+    // Documentation tools
+    if (lowerMsg.includes('documentation') || lowerMsg.includes('document')) {
+      return ['Notion', 'Confluence', 'GitBook', 'Slab', 'Coda', 'Obsidian', 'Roam']
+    }
+    
+    // Communication tools
+    if (lowerMsg.includes('communication') || lowerMsg.includes('chat') || lowerMsg.includes('messaging')) {
+      return ['Slack', 'Discord', 'Teams', 'Telegram', 'WhatsApp', 'Zoom', 'Meet']
+    }
+    
+    // Team size
+    if (lowerMsg.includes('team size') || lowerMsg.includes('how many people')) {
+      return ['2-5', '6-10', '11-25', '26-50', '51-100', '100+', 'Just me']
+    }
+    
+    // Company stage
+    if (lowerMsg.includes('stage') || lowerMsg.includes('funding')) {
+      return ['Pre-seed', 'Seed', 'Series A', 'Series B', 'Growth', 'Bootstrap', 'Revenue']
+    }
+    
+    // Role
+    if (lowerMsg.includes('role') || lowerMsg.includes('what do you do')) {
+      return ['CEO', 'CTO', 'Founder', 'Engineer', 'Designer', 'Product', 'Marketing']
+    }
+    
+    // AI usage
+    if (lowerMsg.includes('ai') || lowerMsg.includes('artificial intelligence')) {
+      return ['ChatGPT', 'Claude', 'Copilot', 'Cursor', 'None', 'Custom tools', 'OpenAI API']
+    }
+    
+    return []
+  }
+
+  const suggestions = useMemo(() => getSuggestions(lastAssistantMessage).slice(0, 7), [lastAssistantMessage])
+
+  const handleSuggestionClick = (suggestion: string) => {
+    setMessage(prev => prev ? `${prev}, ${suggestion}` : suggestion)
+    setClickedSuggestions(prev => new Set(prev).add(suggestion))
+    const textarea = (typeof ref === 'object' && ref?.current) || textareaRef.current
+    if (textarea) {
+      textarea.focus()
+    }
+  }
+
+  // Update clicked suggestions based on current message content
+  React.useEffect(() => {
+    const currentSuggestions = suggestions.filter(suggestion => 
+      message.split(',').map(s => s.trim()).includes(suggestion)
+    )
+    setClickedSuggestions(new Set(currentSuggestions))
+  }, [message, suggestions])
+
+  // Reset clicked suggestions when assistant message changes (new question)
+  React.useEffect(() => {
+    setClickedSuggestions(new Set())
+  }, [lastAssistantMessage])
 
   // Auto-focus on mount
   useEffect(() => {
@@ -61,23 +136,54 @@ export default function ChatInput({ onSendMessage, onFirstKeystroke, autoFocus =
   }
 
   return (
-    <form onSubmit={handleSubmit} className="w-full">
-      <textarea
-        ref={textareaRef}
-        value={message}
-        onChange={handleChange}
-        onKeyDown={handleKeyDown}
-        placeholder="Type your response..."
-        disabled={disabled}
-        autoFocus
-        className="w-full px-3 py-3 text-base sm:text-lg bg-secondary text-primary border border-subtle rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-opacity-50 resize-none placeholder-muted focus:border-subtle"
-        style={{ 
-          minHeight: '52px', 
-          maxHeight: '200px',
-          '--tw-ring-color': 'var(--accent)'
-        }}
-        rows={1}
-      />
-    </form>
+    <div className="w-full">
+      {/* Suggestions */}
+      {suggestions.length > 0 && !isSessionEnding && (
+        <div className="mb-2">
+          <div className="flex flex-wrap gap-2">
+            {suggestions.map((suggestion, index) => {
+              const isClicked = clickedSuggestions.has(suggestion)
+              return (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => handleSuggestionClick(suggestion)}
+                  disabled={disabled}
+                  className={`px-2 py-1 text-xs rounded border bg-transparent transition-all duration-300 ${
+                    isClicked 
+                      ? 'opacity-30 text-muted border-subtle' 
+                      : 'text-muted hover:text-primary border-subtle hover:border-primary'
+                  }`}
+                >
+                  {suggestion}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+      
+      <form onSubmit={handleSubmit} className={`w-full transition-opacity duration-1000 ${
+        isSessionEnding ? 'opacity-20' : 'opacity-100'
+      }`}>
+        <textarea
+          ref={ref || textareaRef}
+          value={message}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          placeholder={isSessionEnding ? "Submitted!" : "Type your response..."}
+          disabled={disabled || isSessionEnding}
+          autoFocus
+          className="w-full px-3 py-3 text-base sm:text-lg bg-secondary text-primary border border-subtle rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-opacity-50 resize-none placeholder-muted focus:border-subtle"
+          style={{ 
+            minHeight: '52px', 
+            maxHeight: '200px'
+          } as React.CSSProperties}
+          rows={1}
+        />
+      </form>
+    </div>
   )
-}
+})
+
+export default ChatInput
