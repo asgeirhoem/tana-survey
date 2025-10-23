@@ -71,6 +71,16 @@ export default function SurveyChat() {
     // Count how many of our target data points we likely have
     const userMessages = conversation.filter(m => m.role === 'user').map(m => m.content.toLowerCase())
     const allUserText = userMessages.join(' ')
+    const assistantMessages = conversation.filter(m => m.role === 'assistant').map(m => m.content.toLowerCase())
+    const allAssistantText = assistantMessages.join(' ')
+    
+    // Check if we've already asked the final AI question
+    const hasAskedFinalQuestion = allAssistantText.includes('final question') && allAssistantText.includes('value are you currently getting out of ai')
+    
+    // If we've asked the final question, we're ready to conclude
+    if (hasAskedFinalQuestion) {
+      return true
+    }
     
     // Check for key data points mentioned
     let dataPoints = 0
@@ -94,14 +104,14 @@ export default function SurveyChat() {
     if (allUserText.includes('seed') || allUserText.includes('series') || allUserText.includes('bootstrap') || 
         allUserText.includes('startup') || allUserText.includes('saas') || allUserText.includes('fintech')) dataPoints++
     
-    // End if we have good coverage (4+ data points) and at least 3 exchanges
-    return dataPoints >= 4 && userMessages.length >= 3
+    // Suggest final question if we have good coverage (4+ data points) and at least 3 exchanges
+    return dataPoints >= 4 && userMessages.length >= 3 && !hasAskedFinalQuestion
   }, [])
 
   // Check if conversation should end based on AI response
   const checkForConversationEnd = useCallback(async (latestResponse: string, conversation: Message[]) => {
     // Only end on the specific conclusion phrase from our prompt
-    if (latestResponse.toLowerCase().includes('perfect, thanks!')) {
+    if (latestResponse.toLowerCase().includes('perfect, thanks for taking the time!')) {
       
       // Mark session as ending
       setIsSessionEnding(true)

@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     // Modify system prompt if we should conclude
     let systemPrompt = SURVEY_SYSTEM_PROMPT
     if (shouldConclude) {
-      systemPrompt += '\n\nIMPORTANT: You have enough information. End with exactly "Perfect, thanks!" and nothing more.'
+      systemPrompt += '\n\nIMPORTANT: You have enough information. End with exactly "Perfect, thanks for taking the time! 🙏" and nothing more. Do not add any markers, tags, or additional text.'
     }
 
     const stream = await anthropic.messages.create({

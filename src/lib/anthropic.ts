@@ -28,7 +28,9 @@ Rules:
 - Stay focused on startup workflows and tools only
 - Politely redirect if user goes off-topic (politics, religion, gossip, etc.)
 
-End when you have all columns filled: "Perfect, thanks!"`
+When you have most columns filled, ask the final question: "Final question - what value are you currently getting out of AI?"
+
+End after the AI value response: "Perfect, thanks for taking the time! 🙏"`
 
 interface Message {
   role: 'user' | 'assistant'

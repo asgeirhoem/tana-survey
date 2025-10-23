@@ -1,7 +1,12 @@
 'use client'
 
-import { useState, useRef, useEffect, forwardRef, useMemo } from 'react'
+import { useState, useRef, useEffect, forwardRef } from 'react'
 import React from 'react'
+
+interface SuggestionGroup {
+  category: string
+  suggestions: string[]
+}
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void
@@ -16,56 +21,45 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatI
   const [message, setMessage] = useState('')
   const [hasStartedTyping, setHasStartedTyping] = useState(false)
   const [clickedSuggestions, setClickedSuggestions] = useState<Set<string>>(new Set())
+  const [suggestionGroups, setSuggestionGroups] = useState<SuggestionGroup[]>([])
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // Generate suggestions based on the last assistant message
-  const getSuggestions = (assistantMessage: string): string[] => {
-    const lowerMsg = assistantMessage.toLowerCase()
-    
-    // Location/setup questions
-    if (lowerMsg.includes('remote') || lowerMsg.includes('office') || lowerMsg.includes('location') || lowerMsg.includes('where')) {
-      return ['Remote', 'SF', 'NY', 'London', 'Hybrid', 'Office', 'Berlin']
+  // Fetch AI-generated suggestions
+  const fetchSuggestions = async (question: string) => {
+    if (!question.trim()) {
+      setSuggestionGroups([])
+      return
     }
-    
-    // Project management tools
-    if (lowerMsg.includes('project management') || lowerMsg.includes('track project')) {
-      return ['Linear', 'Jira', 'Trello', 'Asana', 'Monday', 'Notion', 'ClickUp']
+
+    setLoadingSuggestions(true)
+    try {
+      const response = await fetch('/api/suggestions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question })
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setSuggestionGroups(data.groups || [])
+      } else {
+        setSuggestionGroups([])
+      }
+    } catch (error) {
+      console.error('Failed to fetch suggestions:', error)
+      setSuggestionGroups([])
+    } finally {
+      setLoadingSuggestions(false)
     }
-    
-    // Documentation tools
-    if (lowerMsg.includes('documentation') || lowerMsg.includes('document')) {
-      return ['Notion', 'Confluence', 'GitBook', 'Slab', 'Coda', 'Obsidian', 'Roam']
-    }
-    
-    // Communication tools
-    if (lowerMsg.includes('communication') || lowerMsg.includes('chat') || lowerMsg.includes('messaging')) {
-      return ['Slack', 'Discord', 'Teams', 'Telegram', 'WhatsApp', 'Zoom', 'Meet']
-    }
-    
-    // Team size
-    if (lowerMsg.includes('team size') || lowerMsg.includes('how many people')) {
-      return ['2-5', '6-10', '11-25', '26-50', '51-100', '100+', 'Just me']
-    }
-    
-    // Company stage
-    if (lowerMsg.includes('stage') || lowerMsg.includes('funding')) {
-      return ['Pre-seed', 'Seed', 'Series A', 'Series B', 'Growth', 'Bootstrap', 'Revenue']
-    }
-    
-    // Role
-    if (lowerMsg.includes('role') || lowerMsg.includes('what do you do')) {
-      return ['CEO', 'CTO', 'Founder', 'Engineer', 'Designer', 'Product', 'Marketing']
-    }
-    
-    // AI usage
-    if (lowerMsg.includes('ai') || lowerMsg.includes('artificial intelligence')) {
-      return ['ChatGPT', 'Claude', 'Copilot', 'Cursor', 'None', 'Custom tools', 'OpenAI API']
-    }
-    
-    return []
   }
 
-  const suggestions = useMemo(() => getSuggestions(lastAssistantMessage).slice(0, 7), [lastAssistantMessage])
+  // Fetch suggestions when assistant message changes
+  useEffect(() => {
+    if (lastAssistantMessage) {
+      fetchSuggestions(lastAssistantMessage)
+    }
+  }, [lastAssistantMessage])
 
   const handleSuggestionClick = (suggestion: string) => {
     setMessage(prev => prev ? `${prev}, ${suggestion}` : suggestion)
@@ -78,11 +72,12 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatI
 
   // Update clicked suggestions based on current message content
   React.useEffect(() => {
-    const currentSuggestions = suggestions.filter(suggestion => 
+    const allSuggestions = suggestionGroups.flatMap(group => group.suggestions)
+    const currentSuggestions = allSuggestions.filter(suggestion => 
       message.split(',').map(s => s.trim()).includes(suggestion)
     )
     setClickedSuggestions(new Set(currentSuggestions))
-  }, [message, suggestions])
+  }, [message, suggestionGroups])
 
   // Reset clicked suggestions when assistant message changes (new question)
   React.useEffect(() => {
@@ -110,9 +105,12 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatI
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (message.trim() && !disabled) {
+      // Clear suggestions immediately when submitting
+      setSuggestionGroups([])
+      setClickedSuggestions(new Set())
+      
       onSendMessage(message.trim())
       setMessage('')
-      setClickedSuggestions(new Set()) // Clear suggestions when user sends message
       // Re-focus after sending message
       setTimeout(() => textareaRef.current?.focus(), 50)
     }
@@ -144,27 +142,34 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatI
   return (
     <div className="w-full">
       {/* Suggestions */}
-      {suggestions.length > 0 && !isSessionEnding && (
-        <div className="mb-1">
-          <div className="flex flex-wrap gap-2 mb-2">
-            {suggestions.map((suggestion, index) => {
-              const isClicked = clickedSuggestions.has(suggestion)
-              return (
-                <button
-                  key={index}
-                  type="button"
-                  onClick={() => handleSuggestionClick(suggestion)}
-                  disabled={disabled}
-                  className={`px-2 py-1 text-sm rounded border bg-transparent transition-all duration-300 ${
-                    isClicked 
-                      ? 'opacity-30 text-muted border-transparent' 
-                      : 'text-muted hover:text-primary border-light hover:border-primary'
-                  }`}
-                >
-                  {suggestion}
-                </button>
-              )
-            })}
+      {suggestionGroups.length > 0 && !isSessionEnding && (
+        <div className="mb-1 animate-in fade-in duration-100">
+          <div className="flex flex-wrap gap-2 mb-2 items-end justify-start">
+            {suggestionGroups.map((group, groupIndex) => (
+              <React.Fragment key={groupIndex}>
+                {groupIndex > 0 && (
+                  <div className="w-px h-6 bg-light self-center mx-1"></div>
+                )}
+                {group.suggestions.map((suggestion, index) => {
+                  const isClicked = clickedSuggestions.has(suggestion)
+                  return (
+                    <button
+                      key={`${groupIndex}-${index}`}
+                      type="button"
+                      onClick={() => handleSuggestionClick(suggestion)}
+                      disabled={disabled}
+                      className={`px-2 py-1 text-sm rounded border bg-transparent transition-all duration-300 ${
+                        isClicked 
+                          ? 'opacity-30 text-muted border-transparent' 
+                          : 'text-muted hover:text-primary border-light hover:border-primary'
+                      }`}
+                    >
+                      {suggestion}
+                    </button>
+                  )
+                })}
+              </React.Fragment>
+            ))}
           </div>
         </div>
       )}
@@ -181,12 +186,18 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatI
             placeholder={isSessionEnding ? "Submitted!" : "Type your response..."}
             disabled={disabled || isSessionEnding}
             autoFocus
-            className="w-full px-4 py-4 text-base bg-secondary text-primary rounded-lg focus:outline-none resize-none placeholder-muted focus:shadow-[0_0_0_2px_#007AFF] transition-shadow duration-200 sm:px-3 sm:py-3"
+            className="w-full px-4 py-4 text-base bg-secondary text-primary rounded-lg outline-none resize-none placeholder-muted transition-shadow duration-200 sm:px-3 sm:py-3"
             style={{ 
               minHeight: '56px', 
               maxHeight: '200px',
               boxShadow: '0 0 0 1px var(--border-subtle)'
             } as React.CSSProperties}
+            onFocus={(e) => {
+              e.target.style.boxShadow = '0 0 0 2px #007AFF'
+            }}
+            onBlur={(e) => {
+              e.target.style.boxShadow = '0 0 0 1px var(--border-subtle)'
+            }}
             rows={1}
           />
           {/* Submit button hidden on mobile, visible on desktop */}
