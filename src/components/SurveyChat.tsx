@@ -41,9 +41,17 @@ export default function SurveyChat() {
     // Add a small delay to ensure DOM is updated before scrolling
     const timer = setTimeout(() => {
       scrollToBottom()
+      
+      // Also ensure input stays focused after messages update (if not loading and not ending)
+      if (!isLoading && !isSessionEnding) {
+        const textarea = document.querySelector('textarea')
+        if (textarea) {
+          textarea.focus()
+        }
+      }
     }, 100)
     return () => clearTimeout(timer)
-  }, [messages, scrollToBottom])
+  }, [messages, scrollToBottom, isLoading, isSessionEnding])
 
   // Save data on page unload
   useEffect(() => {
@@ -240,9 +248,12 @@ export default function SurveyChat() {
               
               // Re-focus input after AI response completes (if not ending)
               setTimeout(() => {
-                const textarea = document.querySelector('textarea')
-                if (textarea && !isSessionEnding) {
-                  textarea.focus()
+                if (chatInputRef.current && !isSessionEnding) {
+                  const textarea = chatInputRef.current.querySelector?.('textarea') || 
+                                 document.querySelector('textarea')
+                  if (textarea) {
+                    textarea.focus()
+                  }
                 }
               }, 100)
               return
@@ -277,6 +288,15 @@ export default function SurveyChat() {
       )
     } finally {
       setIsLoading(false)
+      // Focus input after loading ends
+      setTimeout(() => {
+        if (!isSessionEnding) {
+          const textarea = document.querySelector('textarea')
+          if (textarea) {
+            textarea.focus()
+          }
+        }
+      }, 50)
     }
   }, [messages, checkForConversationEnd, isSessionEnding])
 
