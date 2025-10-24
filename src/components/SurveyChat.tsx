@@ -28,11 +28,21 @@ export default function SurveyChat() {
   const chatInputRef = useRef<any>(null)
 
   const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    // On mobile, scroll to keep the input in view after the conversation
+    if (window.innerWidth < 640) { // sm breakpoint
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+    } else {
+      // Desktop: just smooth scroll to bottom
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
   }, [])
 
   useEffect(() => {
-    scrollToBottom()
+    // Add a small delay to ensure DOM is updated before scrolling
+    const timer = setTimeout(() => {
+      scrollToBottom()
+    }, 100)
+    return () => clearTimeout(timer)
   }, [messages, scrollToBottom])
 
   // Save data on page unload
@@ -275,43 +285,63 @@ export default function SurveyChat() {
       backgroundColor: isSessionEnding ? 'var(--colorGreen50)' : 'var(--bg-primary)'
     }}>
       
-      <div className="flex-1 overflow-y-auto px-4 sm:px-6 pt-8 sm:pt-16 pb-2 sm:pb-8 max-w-2xl mx-auto w-full">
-        <div className="mb-6 sm:mb-8">
-          <TanaLogo className="h-10 sm:h-12 w-auto" />
-        </div>
-        {messages.map((message, index) => {
-          const isLastAssistantMessage = isSessionEnding && 
-            message.role === 'assistant' && 
-            index === messages.length - 1
-          const shouldFadeOut = isSessionEnding && !isLastAssistantMessage
-          
-          return (
-            <div 
-              key={message.id}
-              className={`transition-opacity duration-1000 ${
-                shouldFadeOut ? 'opacity-20' : 'opacity-100'
-              }`}
-            >
-              <ChatMessage message={message} isSessionEnding={isSessionEnding} />
-            </div>
-          )
-        })}
-        {isLoading && (
-          <div className="mb-6 text-left">
-            <div className="inline-block">
-              <div className="flex space-x-1">
-                <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--text-muted)' }}></div>
-                <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--text-muted)', animationDelay: '0.1s' }}></div>
-                <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--text-muted)', animationDelay: '0.2s' }}></div>
+      {/* Mobile: scroll container, Desktop: flex layout */}
+      <div className="flex-1 overflow-y-auto sm:overflow-y-visible">
+        <div className="px-4 sm:px-6 pt-8 sm:pt-16 pb-4 sm:pb-8 max-w-2xl mx-auto w-full">
+          <div className="mb-6 sm:mb-8">
+            <TanaLogo className="h-10 sm:h-12 w-auto text-primary" />
+          </div>
+          {messages.map((message, index) => {
+            const isLastAssistantMessage = isSessionEnding && 
+              message.role === 'assistant' && 
+              index === messages.length - 1
+            const shouldFadeOut = isSessionEnding && !isLastAssistantMessage
+            
+            return (
+              <div 
+                key={message.id}
+                className={`transition-opacity duration-1000 ${
+                  shouldFadeOut ? 'opacity-20' : 'opacity-100'
+                }`}
+              >
+                <ChatMessage message={message} isSessionEnding={isSessionEnding} />
+              </div>
+            )
+          })}
+          {isLoading && (
+            <div className="mb-6 text-left">
+              <div className="inline-block">
+                <div className="flex space-x-1">
+                  <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--text-muted)' }}></div>
+                  <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--text-muted)', animationDelay: '0.1s' }}></div>
+                  <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--text-muted)', animationDelay: '0.2s' }}></div>
+                </div>
               </div>
             </div>
+          )}
+          
+          {/* Mobile: Input directly under messages, Desktop: sticky */}
+          <div className="sm:hidden mt-4 pb-4">
+            <ChatInput 
+              ref={chatInputRef}
+              onSendMessage={handleSendMessage} 
+              onFirstKeystroke={startSession}
+              autoFocus={true}
+              disabled={isLoading || isSessionEnding}
+              isSessionEnding={isSessionEnding}
+              lastAssistantMessage={
+                messages.length > 0 ? 
+                messages.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '' : 
+                ''
+              }
+            />
           </div>
-        )}
-        <div ref={messagesEndRef} />
+          <div ref={messagesEndRef} />
+        </div>
       </div>
       
-      {/* Fixed input container for mobile */}
-      <div className="sticky bottom-0 px-4 sm:px-6 pb-4 sm:pb-12 pt-2 sm:pt-0 max-w-2xl mx-auto w-full" style={{
+      {/* Desktop: Fixed input container */}
+      <div className="hidden sm:block sticky bottom-0 px-4 sm:px-6 pb-4 sm:pb-12 pt-2 sm:pt-0 max-w-2xl mx-auto w-full" style={{
         backgroundColor: isSessionEnding ? 'var(--colorGreen50)' : 'var(--bg-primary)'
       }}>
         <ChatInput 
