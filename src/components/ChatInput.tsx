@@ -23,6 +23,18 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatI
   const [message, setMessage] = useState('')
   const [hasStartedTyping, setHasStartedTyping] = useState(false)
   const [clickedSuggestions, setClickedSuggestions] = useState<Set<string>>(new Set())
+  // Static suggestions for the initial question
+  const INITIAL_SUGGESTIONS: SuggestionGroup[] = [
+    {
+      category: "Company focus",
+      suggestions: ["AI/ML platform", "Developer tools", "Fintech", "Healthcare", "E-commerce", "B2B software"]
+    },
+    {
+      category: "Problem solved", 
+      suggestions: ["Save time", "Reduce costs", "Automate tasks", "Improve workflows", "Better decisions", "Scale operations"]
+    }
+  ]
+
   const [suggestionGroups, setSuggestionGroups] = useState<SuggestionGroup[]>([])
   const [loadingSuggestions, setLoadingSuggestions] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -111,6 +123,12 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatI
     }
   }, [])
   
+  // Check if this is the initial question about company/problem
+  const isInitialQuestion = (message: string) => {
+    const lowerMsg = message.toLowerCase()
+    return lowerMsg.includes("what's your company about") && lowerMsg.includes("what problem are you solving")
+  }
+
   // Clear suggestions when loading starts, fetch suggestions only once per complete message
   useEffect(() => {
     if (isLoading) {
@@ -140,10 +158,17 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatI
       return
     }
 
-    console.log('🆕 New message, marking as processed and fetching suggestions')
+    console.log('🆕 New message, marking as processed')
     processedMessagesRef.current.add(messageHash)
     lastProcessedRef.current = messageHash
-    fetchSuggestions(messageToUse)
+    
+    // Use static suggestions for the initial question
+    if (isInitialQuestion(messageToUse)) {
+      console.log('⚡ Using static suggestions for initial question')
+      setSuggestionGroups(INITIAL_SUGGESTIONS)
+    } else {
+      fetchSuggestions(messageToUse)
+    }
   }, [bufferedAssistantMessage, lastAssistantMessage, isLoading])
 
   const handleSuggestionClick = (suggestion: string) => {

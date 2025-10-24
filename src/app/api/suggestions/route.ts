@@ -18,20 +18,21 @@ Examples of WRONG suggestions (NEVER do this):
 
 For compound questions asking multiple things, create separate groups:
 - Question: "What's your team size and location setup?" → 
-  Group 1: "Team Size" ["2-5", "6-10", "11-25", "26-50"] 
+  Group 1: "Team size" ["2-5", "6-10", "11-25", "26-50"] 
   Group 2: "Location" ["Remote", "Office", "Hybrid"]
 
 JSON format:
 {
   "groups": [
-    {"category": "Team Size", "suggestions": ["2-5", "6-10", "11-25"]},
+    {"category": "Team size", "suggestions": ["2-5", "6-10", "11-25"]},
     {"category": "Location", "suggestions": ["Remote", "Office", "Hybrid"]}
   ]
 }
 
 Rules:
 - ONLY factual answers to the question, never conversational responses
-- 1-2 words maximum per suggestion  
+- Use sentence case for categories (e.g., "Team size", not "Team Size")
+- 1-3 words maximum per suggestion  
 - Max 6 suggestions per group
 - Common startup/tech answers only`
 
