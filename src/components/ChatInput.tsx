@@ -14,10 +14,11 @@ interface ChatInputProps {
   autoFocus?: boolean
   disabled?: boolean
   isSessionEnding?: boolean
+  isLoading?: boolean
   lastAssistantMessage?: string
 }
 
-const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatInput({ onSendMessage, onFirstKeystroke, autoFocus = false, disabled = false, isSessionEnding = false, lastAssistantMessage = '' }, ref) {
+const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatInput({ onSendMessage, onFirstKeystroke, autoFocus = false, disabled = false, isSessionEnding = false, isLoading = false, lastAssistantMessage = '' }, ref) {
   const [message, setMessage] = useState('')
   const [hasStartedTyping, setHasStartedTyping] = useState(false)
   const [clickedSuggestions, setClickedSuggestions] = useState<Set<string>>(new Set())
@@ -54,26 +55,24 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatI
     }
   }
 
-  // Debounce suggestions fetching to prevent flickering during streaming
+  // Clear suggestions when loading starts, fetch when complete
   useEffect(() => {
-    if (!lastAssistantMessage) {
+    if (isLoading) {
       setSuggestionGroups([])
       return
     }
 
-    // Only fetch suggestions if the message seems complete (ends with punctuation or question mark)
-    const trimmedMessage = lastAssistantMessage.trim()
-    const seemsComplete = /[.!?]$/.test(trimmedMessage) || trimmedMessage.includes('?')
-    
-    if (!seemsComplete) return
+    if (!lastAssistantMessage) {
+      return
+    }
 
-    // Debounce the fetch to avoid multiple requests during streaming
+    // Wait a brief moment to ensure the message is fully complete
     const timer = setTimeout(() => {
       fetchSuggestions(lastAssistantMessage)
-    }, 500)
+    }, 200)
 
     return () => clearTimeout(timer)
-  }, [lastAssistantMessage])
+  }, [lastAssistantMessage, isLoading])
 
   const handleSuggestionClick = (suggestion: string) => {
     setMessage(prev => prev ? `${prev}, ${suggestion}` : suggestion)

@@ -346,6 +346,7 @@ export default function SurveyChat() {
             autoFocus={true}
             disabled={isLoading || isSessionEnding}
             isSessionEnding={isSessionEnding}
+            isLoading={isLoading}
             lastAssistantMessage={
               messages.length > 0 ? 
               messages.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '' : 
