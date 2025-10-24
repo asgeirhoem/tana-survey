@@ -340,9 +340,10 @@ export default function SurveyChat() {
           return (
             <div 
               key={message.id}
-              className={`transition-opacity duration-1000 ${
-                shouldFadeOut ? 'opacity-20' : 'opacity-100'
-              }`}
+              className="transition-all duration-1000"
+              style={{
+                mixBlendMode: shouldFadeOut ? 'overlay' : 'normal'
+              }}
             >
               <ChatMessage message={message} isSessionEnding={isSessionEnding} />
             </div>

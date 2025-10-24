@@ -68,12 +68,33 @@ export async function POST(request: NextRequest) {
       throw new Error('Unexpected response format')
     }
 
-    // Parse the AI response
+    // Parse the AI response with improved error handling
     let suggestions
     try {
-      suggestions = JSON.parse(content.text)
+      // Clean the response text - sometimes AI adds extra text around JSON
+      let jsonText = content.text.trim()
+      
+      // Try to extract JSON if it's wrapped in extra text
+      const jsonMatch = jsonText.match(/\{[\s\S]*\}/)
+      if (jsonMatch) {
+        jsonText = jsonMatch[0]
+      }
+      
+      suggestions = JSON.parse(jsonText)
+      
+      // Validate the structure
+      if (!suggestions.groups || !Array.isArray(suggestions.groups)) {
+        throw new Error('Invalid suggestions structure')
+      }
+      
+      // Filter out invalid groups
+      suggestions.groups = suggestions.groups.filter(group => 
+        group.category && Array.isArray(group.suggestions) && group.suggestions.length > 0
+      )
+      
     } catch (parseError) {
       console.error('Failed to parse AI response:', content.text)
+      console.error('Parse error:', parseError)
       // Fallback to empty groups
       suggestions = { groups: [] }
     }

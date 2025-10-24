@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, forwardRef } from 'react'
+import { useState, useRef, useEffect, forwardRef, useCallback } from 'react'
 import React from 'react'
 
 interface SuggestionGroup {
@@ -27,15 +27,55 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatI
   const [loadingSuggestions, setLoadingSuggestions] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
+  // Check if text is actually a question that needs suggestions
+  const isQuestion = (text: string) => {
+    const lowerText = text.toLowerCase().trim()
+    
+    // Skip obvious non-questions
+    if (lowerText.includes('perfect, thanks') || 
+        lowerText.includes('thank you') ||
+        lowerText.includes('thanks for') ||
+        lowerText.includes('got it') ||
+        lowerText.startsWith('okay,') ||
+        lowerText.startsWith('understood') ||
+        lowerText.startsWith('interesting')) {
+      return false
+    }
+    
+    // Require question words or question mark
+    return lowerText.includes('?') || 
+           lowerText.includes('what') || 
+           lowerText.includes('how') || 
+           lowerText.includes('which') || 
+           lowerText.includes('where') || 
+           lowerText.includes('when') || 
+           lowerText.includes('why') ||
+           lowerText.includes('do you') ||
+           lowerText.includes('are you') ||
+           lowerText.includes('can you') ||
+           lowerText.includes('would you')
+  }
+
   // Fetch AI-generated suggestions
   const fetchSuggestions = async (question: string) => {
+    console.log('🔍 Checking if question needs suggestions:', question.slice(0, 100) + (question.length > 100 ? '...' : ''))
+    
     if (!question.trim()) {
+      console.log('❌ Empty question, clearing suggestions')
       setSuggestionGroups([])
       return
     }
-
+    
+    if (!isQuestion(question)) {
+      console.log('⏭️ Not a question, skipping suggestions')
+      setSuggestionGroups([])
+      return
+    }
+    
+    console.log('📤 Valid question, fetching suggestions')
     setLoadingSuggestions(true)
     try {
+      console.log('📤 Sending suggestions API request')
       const response = await fetch('/api/suggestions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -44,32 +84,65 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatI
       
       if (response.ok) {
         const data = await response.json()
+        console.log('✅ Received suggestions:', data.groups?.length || 0, 'groups')
+        console.log('📝 Suggestion groups:', data.groups)
         setSuggestionGroups(data.groups || [])
       } else {
+        console.log('❌ Suggestions API error:', response.status, response.statusText)
         setSuggestionGroups([])
       }
     } catch (error) {
-      console.error('Failed to fetch suggestions:', error)
+      console.error('❌ Failed to fetch suggestions:', error)
       setSuggestionGroups([])
     } finally {
       setLoadingSuggestions(false)
     }
   }
 
-  // Clear suggestions when loading starts, fetch from buffered content immediately
+  // Track which messages we've already processed
+  const processedMessagesRef = useRef(new Set<string>())
+  const lastProcessedRef = useRef('')
+  
+  // Clear processed messages on hot reload to prevent stale state
+  useEffect(() => {
+    return () => {
+      processedMessagesRef.current.clear()
+      lastProcessedRef.current = ''
+    }
+  }, [])
+  
+  // Clear suggestions when loading starts, fetch suggestions only once per complete message
   useEffect(() => {
     if (isLoading) {
+      console.log('⏳ Loading active, clearing suggestions')
       setSuggestionGroups([])
       return
     }
 
-    // Use buffered message if available (gives us 1s head start), otherwise fall back to visual message
+    // Use buffered message if available (complete), otherwise fall back to visual message
     const messageToUse = bufferedAssistantMessage || lastAssistantMessage
     if (!messageToUse) {
+      console.log('❌ No message to process')
       return
     }
 
-    // Fetch suggestions immediately from complete buffered message
+    const messageHash = messageToUse.trim()
+    
+    // Only proceed if this is truly a different message
+    if (messageHash === lastProcessedRef.current) {
+      return
+    }
+    
+    console.log('🔑 Message hash check:', messageHash.slice(0, 50) + '...', 'Already processed:', processedMessagesRef.current.has(messageHash))
+    
+    if (processedMessagesRef.current.has(messageHash)) {
+      console.log('⏭️ Message already processed, skipping')
+      return
+    }
+
+    console.log('🆕 New message, marking as processed and fetching suggestions')
+    processedMessagesRef.current.add(messageHash)
+    lastProcessedRef.current = messageHash
     fetchSuggestions(messageToUse)
   }, [bufferedAssistantMessage, lastAssistantMessage, isLoading])
 
@@ -91,17 +164,22 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatI
     setClickedSuggestions(new Set(currentSuggestions))
   }, [message, suggestionGroups])
 
-  // Reset clicked suggestions when we get a new complete question
+  // Track the last question we reset suggestions for
+  const [lastResetMessage, setLastResetMessage] = useState('')
+  
+  // Reset clicked suggestions only when we get a truly new complete question
   React.useEffect(() => {
     if (!lastAssistantMessage) return
     
     const trimmedMessage = lastAssistantMessage.trim()
     const seemsComplete = /[.!?]$/.test(trimmedMessage) || trimmedMessage.includes('?')
     
-    if (seemsComplete) {
+    // Only reset if this is a new question we haven't reset for before
+    if (seemsComplete && trimmedMessage !== lastResetMessage) {
       setClickedSuggestions(new Set())
+      setLastResetMessage(trimmedMessage)
     }
-  }, [lastAssistantMessage])
+  }, [lastAssistantMessage, lastResetMessage])
 
   // Auto-focus on mount
   useEffect(() => {
@@ -160,7 +238,7 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatI
       <div className="mb-3" style={{ minHeight: '72px' }}>
         {suggestionGroups.length > 0 && !isSessionEnding && (
           <div className="animate-in fade-in duration-100">
-            <div className="flex gap-2 mb-2 items-end justify-start overflow-x-auto scrollbar-hide pb-1 sm:flex-wrap sm:overflow-x-visible">
+            <div className="flex flex-wrap gap-2 mb-2 items-end justify-start">
               {(() => {
                 // Flatten all suggestions and limit to 10
                 const allSuggestions = suggestionGroups.flatMap(group => group.suggestions).slice(0, 10)
@@ -190,7 +268,7 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatI
                         type="button"
                         onClick={() => handleSuggestionClick(suggestion)}
                         disabled={disabled}
-                        className={`px-2 py-1 text-sm rounded border bg-transparent transition-all duration-300 whitespace-nowrap flex-shrink-0 ${
+                        className={`px-2 py-1 text-sm rounded border bg-transparent transition-all duration-300 ${
                           isClicked 
                             ? 'opacity-30 text-muted border-transparent' 
                             : 'text-muted hover:text-primary border-light hover:border-primary'
