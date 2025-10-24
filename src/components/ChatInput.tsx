@@ -141,54 +141,56 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatI
 
   return (
     <div className="w-full">
-      {/* Suggestions */}
-      {suggestionGroups.length > 0 && !isSessionEnding && (
-        <div className="mb-3 animate-in fade-in duration-100">
-          <div className="flex gap-2 mb-2 items-end justify-start overflow-x-auto scrollbar-hide pb-1 sm:flex-wrap sm:overflow-x-visible">
-            {(() => {
-              // Flatten all suggestions and limit to 10
-              const allSuggestions = suggestionGroups.flatMap(group => group.suggestions).slice(0, 10)
-              let currentGroupIndex = 0
-              let currentGroup = suggestionGroups[0]
-              let suggestionIndexInGroup = 0
-              
-              return allSuggestions.map((suggestion, index) => {
-                // Find which group this suggestion belongs to
-                while (currentGroup && suggestionIndexInGroup >= currentGroup.suggestions.length) {
-                  currentGroupIndex++
-                  currentGroup = suggestionGroups[currentGroupIndex]
-                  suggestionIndexInGroup = 0
-                }
+      {/* Reserved space for suggestions - always present to prevent layout shift */}
+      <div className="mb-3" style={{ minHeight: '72px' }}>
+        {suggestionGroups.length > 0 && !isSessionEnding && (
+          <div className="animate-in fade-in duration-100">
+            <div className="flex gap-2 mb-2 items-end justify-start overflow-x-auto scrollbar-hide pb-1 sm:flex-wrap sm:overflow-x-visible">
+              {(() => {
+                // Flatten all suggestions and limit to 10
+                const allSuggestions = suggestionGroups.flatMap(group => group.suggestions).slice(0, 10)
+                let currentGroupIndex = 0
+                let currentGroup = suggestionGroups[0]
+                let suggestionIndexInGroup = 0
                 
-                const isClicked = clickedSuggestions.has(suggestion)
-                const isNewGroup = suggestionIndexInGroup === 0 && currentGroupIndex > 0
-                
-                suggestionIndexInGroup++
-                
-                return (
-                  <React.Fragment key={index}>
-                    {isNewGroup && (
-                      <div className="w-px h-6 bg-light self-center mx-1"></div>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => handleSuggestionClick(suggestion)}
-                      disabled={disabled}
-                      className={`px-2 py-1 text-sm rounded border bg-transparent transition-all duration-300 whitespace-nowrap flex-shrink-0 ${
-                        isClicked 
-                          ? 'opacity-30 text-muted border-transparent' 
-                          : 'text-muted hover:text-primary border-light hover:border-primary'
-                      }`}
-                    >
-                      {suggestion}
-                    </button>
-                  </React.Fragment>
-                )
-              })
-            })()}
+                return allSuggestions.map((suggestion, index) => {
+                  // Find which group this suggestion belongs to
+                  while (currentGroup && suggestionIndexInGroup >= currentGroup.suggestions.length) {
+                    currentGroupIndex++
+                    currentGroup = suggestionGroups[currentGroupIndex]
+                    suggestionIndexInGroup = 0
+                  }
+                  
+                  const isClicked = clickedSuggestions.has(suggestion)
+                  const isNewGroup = suggestionIndexInGroup === 0 && currentGroupIndex > 0
+                  
+                  suggestionIndexInGroup++
+                  
+                  return (
+                    <React.Fragment key={index}>
+                      {isNewGroup && (
+                        <div className="w-px h-6 bg-light self-center mx-1"></div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleSuggestionClick(suggestion)}
+                        disabled={disabled}
+                        className={`px-2 py-1 text-sm rounded border bg-transparent transition-all duration-300 whitespace-nowrap flex-shrink-0 ${
+                          isClicked 
+                            ? 'opacity-30 text-muted border-transparent' 
+                            : 'text-muted hover:text-primary border-light hover:border-primary'
+                        }`}
+                      >
+                        {suggestion}
+                      </button>
+                    </React.Fragment>
+                  )
+                })
+              })()}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
       
       <form onSubmit={handleSubmit} className={`w-full transition-opacity duration-1000 ${
         isSessionEnding ? 'opacity-20' : 'opacity-100'
@@ -202,9 +204,9 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatI
             placeholder={isSessionEnding ? "Submitted!" : "Type your response..."}
             disabled={disabled || isSessionEnding}
             autoFocus
-            className="w-full px-4 py-4 pr-12 text-base bg-secondary text-primary rounded-lg outline-none resize-none placeholder-muted focus:!shadow-[0_0_0_1.5px_var(--border-primary)] transition-shadow duration-200 sm:px-3 sm:py-3 sm:pr-10"
+            className="w-full px-4 py-4 pr-12 text-base bg-secondary text-primary rounded-lg outline-none resize-none placeholder-muted focus:!shadow-[0_0_0_2px_var(--border-primary)] transition-all duration-200 sm:px-3 sm:py-3 sm:pr-10 border border-subtle"
             style={{ 
-              boxShadow: '0 0 0 1px var(--border-subtle)'
+              borderColor: 'var(--border-subtle)'
             } as React.CSSProperties}
             rows={1}
           />

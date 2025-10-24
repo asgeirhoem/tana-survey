@@ -52,6 +52,7 @@
   --text-muted: var(--colorGray500);
   --border-subtle: var(--colorGray200);
   --border-light: var(--colorGray150);
+  --border-primary: var(--colorGray400);
   --accent: #3b82f6;
   
   /* Custom green scale */
@@ -86,6 +87,7 @@
     --text-muted: var(--colorGray450);
     --border-subtle: var(--colorGray750);
     --border-light: var(--colorGray825);
+    --border-primary: var(--colorGray550);
     --accent: #60a5fa;
     
     /* Custom green scale for dark mode */
@@ -120,6 +122,7 @@
   --text-muted: var(--colorGray500);
   --border-subtle: var(--colorGray200);
   --border-light: var(--colorGray150);
+  --border-primary: var(--colorGray400);
   --accent: #3b82f6;
 }
 
@@ -132,6 +135,7 @@
   --text-muted: var(--colorGray450);
   --border-subtle: var(--colorGray750);
   --border-light: var(--colorGray825);
+  --border-primary: var(--colorGray550);
   --accent: #60a5fa;
 }
 
@@ -172,6 +176,10 @@ body {
   
   .border-light {
     border-color: var(--border-light);
+  }
+  
+  .border-primary {
+    border-color: var(--border-primary);
   }
   
   .accent {
