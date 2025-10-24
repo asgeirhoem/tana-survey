@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
       }
       
       // Filter out invalid groups
-      suggestions.groups = suggestions.groups.filter(group => 
+      suggestions.groups = suggestions.groups.filter((group: any) => 
         group.category && Array.isArray(group.suggestions) && group.suggestions.length > 0
       )
       
