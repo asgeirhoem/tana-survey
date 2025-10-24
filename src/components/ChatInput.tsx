@@ -23,15 +23,11 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatI
   const [message, setMessage] = useState('')
   const [hasStartedTyping, setHasStartedTyping] = useState(false)
   const [clickedSuggestions, setClickedSuggestions] = useState<Set<string>>(new Set())
-  // Static suggestions for the initial question
+  // Static suggestions for the initial question - using Y Combinator categories
   const INITIAL_SUGGESTIONS: SuggestionGroup[] = [
     {
-      category: "Company focus",
-      suggestions: ["AI/ML platform", "Developer tools", "Fintech", "Healthcare", "E-commerce", "B2B software"]
-    },
-    {
-      category: "Problem solved", 
-      suggestions: ["Save time", "Reduce costs", "Automate tasks", "Improve workflows", "Better decisions", "Scale operations"]
+      category: "Startup category",
+      suggestions: ["B2B", "Consumer", "Fintech", "Healthcare", "Developer tools", "AI", "EdTech", "Climate", "Biotech", "Hardware"]
     }
   ]
 
