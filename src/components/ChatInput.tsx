@@ -54,11 +54,25 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatI
     }
   }
 
-  // Fetch suggestions when assistant message changes
+  // Debounce suggestions fetching to prevent flickering during streaming
   useEffect(() => {
-    if (lastAssistantMessage) {
-      fetchSuggestions(lastAssistantMessage)
+    if (!lastAssistantMessage) {
+      setSuggestionGroups([])
+      return
     }
+
+    // Only fetch suggestions if the message seems complete (ends with punctuation or question mark)
+    const trimmedMessage = lastAssistantMessage.trim()
+    const seemsComplete = /[.!?]$/.test(trimmedMessage) || trimmedMessage.includes('?')
+    
+    if (!seemsComplete) return
+
+    // Debounce the fetch to avoid multiple requests during streaming
+    const timer = setTimeout(() => {
+      fetchSuggestions(lastAssistantMessage)
+    }, 500)
+
+    return () => clearTimeout(timer)
   }, [lastAssistantMessage])
 
   const handleSuggestionClick = (suggestion: string) => {
@@ -79,9 +93,16 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatI
     setClickedSuggestions(new Set(currentSuggestions))
   }, [message, suggestionGroups])
 
-  // Reset clicked suggestions when assistant message changes (new question)
+  // Reset clicked suggestions when we get a new complete question
   React.useEffect(() => {
-    setClickedSuggestions(new Set())
+    if (!lastAssistantMessage) return
+    
+    const trimmedMessage = lastAssistantMessage.trim()
+    const seemsComplete = /[.!?]$/.test(trimmedMessage) || trimmedMessage.includes('?')
+    
+    if (seemsComplete) {
+      setClickedSuggestions(new Set())
+    }
   }, [lastAssistantMessage])
 
   // Auto-focus on mount
@@ -105,10 +126,6 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatI
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (message.trim() && !disabled) {
-      // Clear suggestions immediately when submitting
-      setSuggestionGroups([])
-      setClickedSuggestions(new Set())
-      
       onSendMessage(message.trim())
       setMessage('')
       // Re-focus after sending message
