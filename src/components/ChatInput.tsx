@@ -39,19 +39,8 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatI
   const isQuestion = (text: string) => {
     const lowerText = text.toLowerCase().trim()
     
-    // Skip obvious non-questions
-    if (lowerText.includes('perfect, thanks') || 
-        lowerText.includes('thank you') ||
-        lowerText.includes('thanks for') ||
-        lowerText.includes('got it') ||
-        lowerText.startsWith('okay,') ||
-        lowerText.startsWith('understood') ||
-        lowerText.startsWith('interesting')) {
-      return false
-    }
-    
-    // Require question words or question mark
-    return lowerText.includes('?') || 
+    // Skip obvious non-questions (but allow if they contain question indicators)
+    const hasQuestionIndicators = lowerText.includes('?') || 
            lowerText.includes('what') || 
            lowerText.includes('how') || 
            lowerText.includes('which') || 
@@ -60,7 +49,21 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatI
            lowerText.includes('why') ||
            lowerText.includes('do you') ||
            lowerText.includes('are you') ||
-           lowerText.includes('can you') ||
+           lowerText.includes('can you')
+    
+    if (!hasQuestionIndicators && (
+        lowerText.includes('perfect, thanks') || 
+        lowerText.includes('thank you') ||
+        lowerText.includes('thanks for') ||
+        lowerText === 'got it' ||
+        lowerText.startsWith('okay,') ||
+        lowerText.startsWith('understood') ||
+        lowerText.startsWith('interesting'))) {
+      return false
+    }
+    
+    // Return true if it has question indicators
+    return hasQuestionIndicators ||
            lowerText.includes('would you')
   }
 
