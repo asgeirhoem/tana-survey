@@ -16,9 +16,10 @@ interface ChatInputProps {
   isSessionEnding?: boolean
   isLoading?: boolean
   lastAssistantMessage?: string
+  bufferedAssistantMessage?: string
 }
 
-const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatInput({ onSendMessage, onFirstKeystroke, autoFocus = false, disabled = false, isSessionEnding = false, isLoading = false, lastAssistantMessage = '' }, ref) {
+const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatInput({ onSendMessage, onFirstKeystroke, autoFocus = false, disabled = false, isSessionEnding = false, isLoading = false, lastAssistantMessage = '', bufferedAssistantMessage = '' }, ref) {
   const [message, setMessage] = useState('')
   const [hasStartedTyping, setHasStartedTyping] = useState(false)
   const [clickedSuggestions, setClickedSuggestions] = useState<Set<string>>(new Set())
@@ -55,24 +56,22 @@ const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(function ChatI
     }
   }
 
-  // Clear suggestions when loading starts, fetch when complete
+  // Clear suggestions when loading starts, fetch from buffered content immediately
   useEffect(() => {
     if (isLoading) {
       setSuggestionGroups([])
       return
     }
 
-    if (!lastAssistantMessage) {
+    // Use buffered message if available (gives us 1s head start), otherwise fall back to visual message
+    const messageToUse = bufferedAssistantMessage || lastAssistantMessage
+    if (!messageToUse) {
       return
     }
 
-    // Wait a brief moment to ensure the message is fully complete
-    const timer = setTimeout(() => {
-      fetchSuggestions(lastAssistantMessage)
-    }, 200)
-
-    return () => clearTimeout(timer)
-  }, [lastAssistantMessage, isLoading])
+    // Fetch suggestions immediately from complete buffered message
+    fetchSuggestions(messageToUse)
+  }, [bufferedAssistantMessage, lastAssistantMessage, isLoading])
 
   const handleSuggestionClick = (suggestion: string) => {
     setMessage(prev => prev ? `${prev}, ${suggestion}` : suggestion)

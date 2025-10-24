@@ -26,6 +26,7 @@ export default function SurveyChat() {
   const [isSessionEnding, setIsSessionEnding] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const chatInputRef = useRef<any>(null)
+  const [bufferedAssistantMessage, setBufferedAssistantMessage] = useState('')
 
   const scrollToBottom = useCallback(() => {
     // On mobile, scroll to keep the input in view after the conversation
@@ -206,6 +207,8 @@ export default function SurveyChat() {
       }
 
       let accumulatedContent = ''
+      let displayContent = ''
+      const VISUAL_DELAY = 1000 // 1 second delay for visual display
 
       while (true) {
         const { done, value } = await reader.read()
@@ -220,6 +223,32 @@ export default function SurveyChat() {
             const data = line.slice(6)
             if (data === '[DONE]') {
               setIsLoading(false)
+              
+              // Set the buffered complete message for suggestions
+              setBufferedAssistantMessage(accumulatedContent)
+              
+              // Start delayed visual streaming of complete message
+              let charIndex = 0
+              const streamVisual = () => {
+                if (charIndex < accumulatedContent.length) {
+                  displayContent = accumulatedContent.substring(0, charIndex + 1)
+                  setMessages(prev => 
+                    prev.map(msg => 
+                      msg.id === assistantMessageId 
+                        ? { ...msg, content: displayContent }
+                        : msg
+                    )
+                  )
+                  charIndex += Math.max(1, Math.floor(accumulatedContent.length / 50)) // Adjust speed
+                  setTimeout(streamVisual, 20) // Adjust timing
+                } else {
+                  // Final message is complete, clear buffer
+                  setBufferedAssistantMessage('')
+                }
+              }
+              
+              // Start visual streaming after delay
+              setTimeout(streamVisual, VISUAL_DELAY)
               
               // Check if conversation should end
               const finalConversation = [...messages, userMessage, { 
@@ -263,13 +292,7 @@ export default function SurveyChat() {
               const parsed = JSON.parse(data)
               if (parsed.text) {
                 accumulatedContent += parsed.text
-                setMessages(prev => 
-                  prev.map(msg => 
-                    msg.id === assistantMessageId 
-                      ? { ...msg, content: accumulatedContent }
-                      : msg
-                  )
-                )
+                // Don't update visual immediately, we'll do delayed streaming
               }
             } catch (e) {
               // Skip invalid JSON
@@ -352,6 +375,7 @@ export default function SurveyChat() {
               messages.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '' : 
               ''
             }
+            bufferedAssistantMessage={bufferedAssistantMessage}
           />
         </div>
         <div ref={messagesEndRef} />
