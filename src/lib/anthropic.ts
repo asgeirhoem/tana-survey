@@ -1,12 +1,12 @@
-import Anthropic from '@anthropic-ai/sdk'
+import Anthropic from "@anthropic-ai/sdk";
 
 if (!process.env.ANTHROPIC_API_KEY) {
-  throw new Error('ANTHROPIC_API_KEY is not set')
+  throw new Error("ANTHROPIC_API_KEY is not set");
 }
 
 export const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
-})
+});
 
 export const SURVEY_SYSTEM_PROMPT = `You are a friendly interviewer asking about startup workflows and tools.
 
@@ -30,9 +30,9 @@ Rules:
 
 When you have most columns filled, ask the final question: "Final question - what value are you currently getting out of AI?"
 
-End after the AI value response: "Perfect, thanks for taking the time! 🙏"`
+End after the AI value response: "Perfect, thanks for taking the time! 🙏"`;
 
 interface Message {
-  role: 'user' | 'assistant'
-  content: string
+  role: "user" | "assistant";
+  content: string;
 }
