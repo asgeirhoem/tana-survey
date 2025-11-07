@@ -406,7 +406,7 @@ export default function VoicePage() {
         connectionRef.current = ws
         
         // Start streaming audio from microphone
-        processorRef.current = startAudioStreaming(ws, stream)
+        processorRef.current = startAudioStreaming(ws, stream) || null
         
       } catch (connectionError) {
         throw connectionError
