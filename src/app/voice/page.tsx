@@ -186,7 +186,7 @@ export default function VoicePage() {
     try {
       if (!audioContextRef.current) return
       
-      const audioBuffer = await audioContextRef.current.decodeAudioData(audioBytes.buffer.slice())
+      const audioBuffer = await audioContextRef.current.decodeAudioData(audioBytes.buffer.slice() as ArrayBuffer)
       const source = audioContextRef.current.createBufferSource()
       source.buffer = audioBuffer
       source.connect(audioContextRef.current.destination)
